@@ -1,28 +1,40 @@
-import sqlite3
+import asyncio
+import aiosqlite
+import logging
 
-try:
-    print("Начинаю очистку групп...")
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-    # Удаляем все группы
-    c.execute('DELETE FROM groups')
-    print("Все группы удалены")
+DB_PATH = 'users.db'
 
-    # Удаляем все связи пользователей с группами
-    c.execute('DELETE FROM group_members')
-    print("Все связи с группами удалены")
+async def clear_groups_data():
+    try:
+        logger.warning("🚨 Начинаю очистку данных групп...")
+        
+        async with aiosqlite.connect(DB_PATH) as db:
+            # 1. Удаляем все группы
+            await db.execute('DELETE FROM groups')
+            logger.info("🗑️ Все группы удалены")
 
-    # Удаляем групповые сообщения
-    c.execute("DELETE FROM messages WHERE mode = 'groups'")
-    print("Все групповые сообщения удалены")
+            # 2. Удаляем все связи пользователей с группами
+            await db.execute('DELETE FROM group_members')
+            logger.info(" Все связи с группами удалены")
 
-    # Сохраняем изменения
-    conn.commit()
-    conn.close()
+            # 3. Удаляем групповые сообщения
+            await db.execute("DELETE FROM messages WHERE mode = 'groups'")
+            logger.info(" Все групповые сообщения удалены")
 
-    print("Операция успешно завершена")
-except Exception as e:
-    print(f"Произошла ошибка: {e}")
+            # Сохраняем изменения
+            await db.commit()
+            
+            logger.info("✅ Операция очистки успешно завершена")
 
-input("Нажмите Enter для завершения...") 
+    except Exception as e:
+        logger.error(f"❌ Произошла ошибка: {e}")
+
+if __name__ == "__main__":
+    # Запускаем асинхронную функцию
+    asyncio.run(clear_groups_data())

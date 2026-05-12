@@ -1,233 +1,216 @@
-const sign_in_btn = document.querySelector("#sign-in-btn");
-const sign_up_btn = document.querySelector("#sign-up-btn");
-const container = document.querySelector(".container");
-
-function showAdminLogin() {
-  container.classList.add("admin-mode");
-  container.classList.remove("sign-up-mode");
-  document.querySelector('.admin-form-container').style.display = 'flex';
-}
-
-// Переключение панелей
-sign_up_btn.addEventListener("click", () => {
-  container.classList.add("sign-up-mode");
-  container.classList.remove("admin-mode");
-});
-
-sign_in_btn.addEventListener("click", () => {
-  container.classList.remove("sign-up-mode");
-  container.classList.remove("admin-mode");
-});
-
-// Обработка формы входа
-document.querySelector(".sign-in-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  const data = {
-    username: formData.get("username"),
-    password: formData.get("password"),
-  };
-
-  try {
-    const response = await fetch("http://127.0.0.1:5000/api/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-    const result = await response.json();
-    const messageContainer = document.querySelector(".message-container"); // Add a container for messages
-    messageContainer.textContent = ""; // Clear previous messages
-
-    if (response.ok) {
-      messageContainer.textContent = result.message; // Display success message
-      messageContainer.style.color = "green"; // Set success message color
-      setTimeout(() => {
-        window.location.href = "/chat"; // Redirect to chat page
-      }, 1000); // 2000 milliseconds = 2 seconds
-    } else {
-      messageContainer.textContent = result.error; // Display error message
-      messageContainer.style.color = "red"; // Set error message color
-    }
-  } catch (error) {
-    const messageContainer = document.querySelector(".message-container");
-    messageContainer.textContent = "Ошибка сервера";
-    messageContainer.style.color = "red";
-  }
-});
-
-// Обработка формы регистрации
-document.querySelector(".sign-up-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  const data = {
-    username: formData.get("username"),
-    email: formData.get("email"),
-    password: formData.get("password"),
-  };
-
-  try {
-    const response = await fetch("http://127.0.0.1:5000/api/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-    const result = await response.json();
-    if (response.ok) {
-      alert(result.message);
-      setTimeout(() => {
-        window.location.href = "/chat"; // Redirect to chat page
-      }, 1000); // 2000 milliseconds = 2 seconds
-    } else {
-      alert(result.error);
-    }
-  } catch (error) {
-    alert("Ошибка сервера");
-  }
-});
-
-// Обработка формы входа админа
-document.querySelector(".admin-sign-in-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const username = document.querySelector(".admin-sign-in-form input[name='username']").value;
-  const password = document.querySelector(".admin-sign-in-form input[name='password']").value;
-  
-  console.log("Отправка данных администратора:", { username, password });
-  
-  const data = {
-    username: username,
-    password: password
-  };
-
-  try {
-    const response = await fetch("http://127.0.0.1:5000/api/admin/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(data),
-      credentials: "include"  // Важно для сохранения сессии
-    });
-    
-    console.log("Статус ответа:", response.status);
-    const result = await response.json();
-    console.log("Ответ сервера:", result);
-    
-    const messageContainer = document.querySelector(".admin-sign-in-form .message-container");
-    messageContainer.textContent = "";
-
-    if (response.ok) {
-      messageContainer.textContent = result.message;
-      messageContainer.style.color = "green";
-      setTimeout(() => {
-        window.location.href = "/admin"; // Redirect to admin page
-      }, 1000);
-    } else {
-      messageContainer.textContent = result.error;
-      messageContainer.style.color = "red";
-    }
-  } catch (error) {
-    console.error("Ошибка:", error);
-    const messageContainer = document.querySelector(".admin-sign-in-form .message-container");
-    messageContainer.textContent = "Ошибка сервера";
-    messageContainer.style.color = "red";
-  }
-});
+// static/app.js — Исправленная версия
+// Все event listeners защищены проверками на null
+// API запросы используют относительные пути (работает на любом порту)
 
 document.addEventListener('DOMContentLoaded', function() {
-    const signUpBtn = document.querySelector('.sign-up-btn');
-    const signInBtn = document.querySelector('.sign-in-btn');
-    const container = document.querySelector('.container');
-
-    signUpBtn.addEventListener('click', () => {
-        container.classList.add('sign-up-mode');
-    });
-
-    signInBtn.addEventListener('click', () => {
-        container.classList.remove('sign-up-mode');
-    });
-
-    // Проверяем параметр admin_error
-    const urlParams = new URLSearchParams(window.location.search);
-    const adminErrorInUrl = urlParams.get('admin_error');
-    const adminErrorInBody = document.body.getAttribute('data-admin-error') === 'true';
-    const adminError = adminErrorInUrl || adminErrorInBody;
     
-    if (adminError) {
-        // Если есть ошибка доступа админа, показываем форму входа админа
+    // === Глобальные элементы (могут отсутствовать на некоторых страницах) ===
+    const sign_in_btn = document.querySelector("#sign-in-btn");
+    const sign_up_btn = document.querySelector("#sign-up-btn");
+    const container = document.querySelector(".container");
+    const adminBtn = document.querySelector('.admin-btn');
+
+    // === Функция показа админ-формы ===
+    function showAdminLogin() {
+        if (!container) return;
+        container.classList.add("admin-mode");
+        container.classList.remove("sign-up-mode");
+        const adminForm = document.querySelector('.admin-form-container');
+        if (adminForm) adminForm.style.display = 'flex';
+    }
+
+    // === Переключение панелей (только если элементы есть) ===
+    if (sign_up_btn) {
+        sign_up_btn.addEventListener("click", () => {
+            if (container) {
+                container.classList.add("sign-up-mode");
+                container.classList.remove("admin-mode");
+            }
+        });
+    }
+
+    if (sign_in_btn) {
+        sign_in_btn.addEventListener("click", () => {
+            if (container) {
+                container.classList.remove("sign-up-mode");
+                container.classList.remove("admin-mode");
+            }
+        });
+    }
+
+    // === Кнопка админа ===
+    if (adminBtn) {
+        adminBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            showAdminLogin();
+        });
+    }
+
+    // === Сделаем функцию доступной глобально, чтобы inline onclick тоже работал ===
+    window.showAdminLogin = showAdminLogin;
+
+    // === Обработка формы входа (только на главной странице) ===
+    const signInForm = document.querySelector(".sign-in-form");
+    if (signInForm && window.location.pathname === '/') {
+        signInForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = {
+                username: formData.get("username"),
+                password: formData.get("password"),
+            };
+
+            try {
+                const response = await fetch("/api/login", {  // ✅ Относительный путь
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                    credentials: "include"
+                });
+                let result = {};
+                try {
+                    result = await response.json();
+                } catch (err) {
+                    result = { error: response.statusText || 'Ошибка сервера' };
+                }
+                const messageContainer = document.querySelector(".sign-in-form .message-container");
+                if (messageContainer) messageContainer.textContent = "";
+
+                if (response.ok) {
+                    if (messageContainer) {
+                        messageContainer.textContent = result.message;
+                        messageContainer.style.color = "green";
+                    }
+                    setTimeout(() => { window.location.href = "/chat"; }, 1000);
+                } else {
+                    if (messageContainer) {
+                        messageContainer.textContent = result.error || "Ошибка входа";
+                        messageContainer.style.color = "red";
+                    }
+                }
+            } catch (error) {
+                console.error("Login error:", error);
+                const messageContainer = document.querySelector(".sign-in-form .message-container");
+                if (messageContainer) {
+                    messageContainer.textContent = "Ошибка сервера";
+                    messageContainer.style.color = "red";
+                }
+            }
+        });
+    }
+
+    // === Обработка формы регистрации (только на главной странице) ===
+    const signUpForm = document.querySelector(".sign-up-form");
+    if (signUpForm && window.location.pathname === '/') {
+        signUpForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = {
+                username: formData.get("username"),  // ✅ Точно как в Pydantic
+                email: formData.get("email"),
+                password: formData.get("password"),
+            };
+
+            try {
+                const response = await fetch("/api/register", {  // ✅ Относительный путь
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                });
+                let result = {};
+                try {
+                    result = await response.json();
+                } catch (err) {
+                    result = { error: response.statusText || 'Ошибка сервера' };
+                }
+                
+                if (response.ok) {
+                    alert(result.message || "Регистрация успешна!");
+                    setTimeout(() => { window.location.href = "/"; }, 1000);
+                } else {
+                    alert(result.error || "Ошибка регистрации");
+                }
+            } catch (error) {
+                console.error("Register error:", error);
+                alert("Ошибка сервера при регистрации");
+            }
+        });
+    }
+
+    // === Обработка формы входа админа (ЕДИНСТВЕННЫЙ обработчик) ===
+    const adminForm = document.querySelector(".admin-sign-in-form");
+    if (adminForm) {
+        adminForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const username = adminForm.querySelector('input[name="username"]')?.value || '';
+            const password = adminForm.querySelector('input[name="password"]')?.value || '';
+            
+            const data = { username, password };
+
+            try {
+                const response = await fetch("/api/admin/login", {  // ✅ Относительный путь
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                    credentials: "include"
+                });
+                
+                let result = {};
+                try {
+                    result = await response.json();
+                } catch (err) {
+                    result = { error: response.statusText || 'Ошибка сервера' };
+                }
+                const messageContainer = adminForm.querySelector(".message-container");
+                if (messageContainer) messageContainer.textContent = "";
+
+                if (response.ok) {
+                    if (messageContainer) {
+                        messageContainer.textContent = result.message || "Успешно!";
+                        messageContainer.style.color = "green";
+                    }
+                    setTimeout(() => { window.location.href = "/admin"; }, 1000);
+                } else {
+                    if (messageContainer) {
+                        messageContainer.textContent = result.error || "Ошибка авторизации";
+                        messageContainer.style.color = "red";
+                    }
+                }
+            } catch (error) {
+                console.error("Admin login error:", error);
+                const messageContainer = adminForm.querySelector(".message-container");
+                if (messageContainer) {
+                    messageContainer.textContent = "Ошибка сервера";
+                    messageContainer.style.color = "red";
+                }
+            }
+        });
+    }
+
+    // === Проверка параметра админ-ошибки в URL ===
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('admin_error') === 'true') {
         showAdminLogin();
-        
-        // Добавляем сообщение об ошибке
-        const messageContainer = document.querySelector(".admin-sign-in-form .message-container");
+        const adminForm = document.querySelector(".admin-sign-in-form");
+        const messageContainer = adminForm?.querySelector(".message-container");
         if (messageContainer) {
             messageContainer.textContent = "Для доступа к админ-панели необходима авторизация";
             messageContainer.style.color = "red";
         }
     }
 
-    function showAdminLogin() {
-        container.classList.add('admin-mode');
-        container.classList.remove('sign-up-mode');
-        const adminFormContainer = document.querySelector('.admin-form-container');
-        if (adminFormContainer) {
-            adminFormContainer.style.display = 'flex';
-        }
+    // === Дополнительные переключатели (если есть) ===
+    const extraSignUpBtn = document.querySelector('.sign-up-btn');
+    const extraSignInBtn = document.querySelector('.sign-in-btn');
+    
+    if (extraSignUpBtn && container) {
+        extraSignUpBtn.addEventListener('click', () => {
+            container.classList.add('sign-up-mode');
+        });
     }
-
-    // Add event listener to admin button
-    const adminBtn = document.querySelector('.admin-btn');
-    if (adminBtn) {
-        adminBtn.addEventListener('click', showAdminLogin);
-    }
-
-    // Handle admin login form submission
-    const adminForm = document.querySelector('.admin-sign-in-form');
-    if (adminForm) {
-        adminForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = adminForm.querySelector('input[type="text"]').value;
-            const password = adminForm.querySelector('input[type="password"]').value;
-
-            try {
-                const response = await fetch('/api/admin/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ username, password }),
-                    credentials: 'include' // Важно для сохранения сессии
-                });
-
-                const data = await response.json();
-                const messageContainer = adminForm.querySelector('.message-container');
-                
-                if (response.ok) {
-                    if (messageContainer) {
-                        messageContainer.textContent = "Успешная авторизация! Переход в панель администратора...";
-                        messageContainer.style.color = "green";
-                    }
-                    
-                    // Задержка перед перенаправлением для отображения сообщения
-                    setTimeout(() => {
-                        window.location.href = '/admin';
-                    }, 1000);
-                } else {
-                    if (messageContainer) {
-                        messageContainer.textContent = data.error || 'Ошибка авторизации';
-                        messageContainer.style.color = "red";
-                    }
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                const messageContainer = adminForm.querySelector('.message-container');
-                if (messageContainer) {
-                    messageContainer.textContent = "Ошибка сервера";
-                    messageContainer.style.color = "red";
-                }
-            }
+    if (extraSignInBtn && container) {
+        extraSignInBtn.addEventListener('click', () => {
+            container.classList.remove('sign-up-mode');
         });
     }
 });
